@@ -179,6 +179,29 @@ class ShipStationAddress(ShipStationBase):
         self.phone = phone
         self.residential = residential
 
+class ShipStationAdvancedOptions(ShipStationBase):
+    def __init__(self, warehouseId=None, nonMachinable=False, saturdayDelivery=None,
+                 containsAlcohol=False, storeId=None, customField1=None, customField2=None,
+                 customField3=None, source=None, mergedOrSplit=False, mergedIds=None,
+                 parentId=None, billToParty=None, billToAccount=None, billToPostalCode=None,
+                 billToCountryCode=None, billToMyOtherAccount=None):
+        self.warehouseId = warehouseId
+        self.nonMachinable = nonMachinable
+        self.saturdayDelivery = saturdayDelivery
+        self.containsAlcohol = containsAlcohol
+        self.storeId = storeId
+        self.customField1 = customField1
+        self.customField2 = customField2
+        self.customField3 = customField3
+        self.source = source
+        self.mergedOrSplit = mergedOrSplit
+        self.mergedIds = mergedIds
+        self.parentId = parentId
+        self.billToParty = billToParty
+        self.billToAccount = billToAccount
+        self.billToPostalCode = billToPostalCode
+        self.billToCountryCode = billToCountryCode
+        self.billToMyOtherAccount = billToMyOtherAccount
 
 class ShipStationOrder(ShipStationBase):
     """
@@ -234,6 +257,12 @@ class ShipStationOrder(ShipStationBase):
         self.insurance_options = None
         self.international_options = None
         self.advanced_options = None
+
+    def set_advanced_options(self, advanced_options=None):
+        if type(advanced_options) is not ShipStationAdvancedOptions:
+            raise AttributeError('Should be type ShipStationAdvancedOptions')
+        
+        self.advanced_options = advanced_options
 
     def set_status(self, status=None):
         if not status:
@@ -293,7 +322,8 @@ class ShipStationOrder(ShipStationBase):
         weight = 0
         items = self.get_items()
         for item in items:
-            weight += item.weight.value * item.quantity
+            if item.weight is not None:
+                weight += item.weight.value * item.quantity
 
         if self.dimensions and self.dimensions.weight:
             weight += self.dimensions.weight.value
@@ -329,6 +359,12 @@ class ShipStationOrder(ShipStationBase):
         else:
             return None
 
+    def get_advanced_options_as_dict(self):
+        if self.advanced_options:
+            return self.advanced_options.as_dict()
+        else:
+            return None
+
     def as_dict(self):
         d = super(ShipStationOrder, self).as_dict()
 
@@ -338,6 +374,7 @@ class ShipStationOrder(ShipStationBase):
         d['shipTo'] = self.get_shipping_address_as_dict()
         d['weight'] = self.get_weight()
         d['internationalOptions'] = self.get_international_options_as_dict()
+        d['advancedOptions'] = self.get_advanced_options_as_dict()
 
         return d
 
@@ -376,6 +413,7 @@ class ShipStation:
 
     def submit_orders(self):
         for order in self.orders:
+            print(json.dumps(order.as_dict()))
             self.post(
                 endpoint='/orders/createorder',
                 data=json.dumps(order.as_dict())
